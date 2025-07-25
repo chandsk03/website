@@ -1,5 +1,6 @@
 import threading
 import re
+import os
 from datetime import datetime, timedelta, UTC
 from uuid import uuid4
 from flask import Flask, render_template_string, request, make_response, jsonify
@@ -807,4 +808,5 @@ def cleanup_inactive_users():
 # Start Application
 if __name__ == "__main__":
     threading.Thread(target=cleanup_inactive_users, daemon=True).start()
-    socketio.run(app, port=5000)
+    port = int(os.environ.get('PORT', 5000))  # Use Vercel's PORT env variable
+    socketio.run(app, host='0.0.0.0', port=port)

@@ -47,7 +47,7 @@ typing_users = set()
 typing_users_lock = threading.Lock()
 rate_limit = {}
 
-# HTML with advanced CSS
+# HTML with advanced CSS (unchanged)
 HTML = """
 <!DOCTYPE html>
 <html lang="en">
@@ -334,7 +334,7 @@ HTML = """
             socket.emit('check_username', { username: usernameInput.value.trim() });
         });
 
-        const socket = io();
+        const socket = io({ transports: ['polling'] }); // Force polling
 
         socket.on('connect', () => {
             warningDiv.textContent = '';
@@ -381,6 +381,10 @@ HTML = """
         socket.on('error', data => {
             warningDiv.textContent = data.error || 'An error occurred.';
             warningDiv.classList.add('show');
+        });
+
+        socket.on('reconnect', () => {
+            socket.emit('check_username', { username: usernameInput.value.trim() });
         });
 
         messageInput.addEventListener('input', () => {
@@ -549,7 +553,7 @@ def serialize_mongo_doc(doc):
 # Flask App Setup
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent', manage_session=True, engineio_logger=False)
 
 # Error Handlers
 @app.errorhandler(NotFound)
@@ -808,5 +812,8 @@ def cleanup_inactive_users():
 # Start Application
 if __name__ == "__main__":
     threading.Thread(target=cleanup_inactive_users, daemon=True).start()
+    from gevent import pywsgi
+    from geventwebsocket.handler import WebSocketHandler
     port = int(os.environ.get('PORT', 5000))  # Use Vercel's PORT env variable
-    socketio.run(app, host='0.0.0.0', port=port)
+    server = pywsgi.WSGIServer(('0.0.0.0', port), app, handler_class=WebSocketHandler)
+    server.serve_forever()

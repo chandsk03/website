@@ -1,0 +1,5 @@
+Flask>=2.0.0
+flask_socketio>=5.0.0
+eventlet>=0.33.0
+pymongo>=4.0.0
+bleach>=6.0.0
